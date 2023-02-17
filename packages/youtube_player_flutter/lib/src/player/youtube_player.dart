@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../enums/thumbnail_quality.dart';
 import '../utils/errors.dart';
@@ -291,7 +292,42 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
     );
   }
 
+  Orientation? _orientation;
+  bool? _isFullScreen;
+
   Widget _buildPlayer({required Widget errorWidget}) {
+    debugPrint('_buildPlayer()');
+    //
+
+    final orientation = MediaQuery.of(context).orientation;
+    final isFullScreen = controller.value.isFullScreen;
+    var update = false;
+
+    if (orientation != _orientation) {
+      update = true;
+      _orientation = orientation;
+    }
+    if (isFullScreen != _isFullScreen) {
+      update = true;
+      _isFullScreen = isFullScreen;
+    }
+
+    if (update) {
+      if (orientation == Orientation.landscape && isFullScreen) {
+        final size = MediaQuery.of(context).size;
+        final aspectRatio = size.width / size.height;
+        debugPrint('aspectRatio: $aspectRatio');
+        if (aspectRatio != _aspectRatio) {
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            debugPrint('**setState');
+            setState(() {
+              _aspectRatio = aspectRatio;
+            });
+          });
+        }
+      }
+    }
+
     return AspectRatio(
       aspectRatio: _aspectRatio,
       child: Stack(
